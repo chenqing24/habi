@@ -20,3 +20,4 @@ http://m.hmz.com/xmcs/陈_思伽_公历 2018年1月8日1时_男/?from=singlemess
 
 url_to = 'http://m.hmz.com/xmcs/' + str_encode + '/?from=singlemessage&isappinstalled=0'
 print(url_to)
+
