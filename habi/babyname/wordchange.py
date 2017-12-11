@@ -1,5 +1,8 @@
 import os
 
+'''
+遍历的字典
+'''
 print(os.path.abspath('.'))
 
 dict_zi = {}
