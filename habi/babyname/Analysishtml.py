@@ -236,16 +236,69 @@ $(function () {
 
 soup = BeautifulSoup(html, 'lxml')
 
-# print(soup)
+print(soup)
+
+row_data = {}
+
+print('============== all html ==============')
+# 姓名
+younam = soup.find_all(id='youname')[0]['value']
+print(younam)
+row_data['姓名'] = younam
+print('============== youname ==============')
+
+# 五格数理评分、配合八字评分
+tag_data = soup.find_all("div", attrs={'class': 'data'})
+print(tag_data[0].ul.find_all("li")[0].span.text)
+print(tag_data[0].ul.find_all("li")[1].span.text)
+
+row_data['五格数理评分'] = int(tag_data[0].ul.find_all("li")[0].span.text)
+row_data['八字评分'] = int(tag_data[0].ul.find_all("li")[1].span.text)
+print('============== 五格数理评分、配合八字评分 ==============')
+
+'''
+组织单行数据，以,号分割：
+名字,五格数理评分,八字评分,天格,人格,地格,外格,总格,三才配置,基础运,成功运,人际关系
+'''
 
 # <div class="ge_detail"><em ><span class="ji">吉</span>三才配置</em>
 #         <p><strong class="red">金 土 土</strong>可获得意外成功发展，有名利双收的运气，基础稳固，平静安康，免于种种灾祸，可得幸福长寿。</p>
 #       </div>
 tagb = soup.find_all("div", attrs={'class': 'ge_detail'})
 # print(tagb)
+
 for child_cont in tagb:
     text = str(child_cont.em.text)
-    if (text.endswith('三才配置')):
-        print(child_cont)
+    print(text)
+    if (text.startswith('天格')):
         print(child_cont.em.span.text)
+        row_data['天格'] = child_cont.em.span.text
+    if (text.startswith('人格')):
+        print(child_cont.em.span.text)
+        row_data['人格'] = child_cont.em.span.text
+    if (text.startswith('地格')):
+        print(child_cont.em.span.text)
+        row_data['地格'] = child_cont.em.span.text
+    if (text.startswith('外格')):
+        print(child_cont.em.span.text)
+        row_data['外格'] = child_cont.em.span.text
+    if (text.startswith('总格')):
+        print(child_cont.em.span.text)
+        row_data['总格'] = child_cont.em.span.text
+    if (text.endswith('三才配置')):
+        print(child_cont.em.span.text)
+        row_data['三才配置'] = child_cont.em.span.text
+    if (text.endswith('基础运的影响')):
+        print(child_cont.em.span.text)
+        row_data['基础运'] = child_cont.em.span.text
+    if (text.endswith('成功运的影响')):
+        print(child_cont.em.span.text)
+        row_data['成功运'] = child_cont.em.span.text
+    if (text.endswith('人际关系的影响')):
+        print(child_cont.em.span.text)
+        row_data['人际关系'] = child_cont.em.span.text
         print('============================================')
+
+print(row_data)
+
+
