@@ -1,9 +1,228 @@
 # coding=gbk
 from bs4 import BeautifulSoup
+from urllib.parse import urlencode, quote_plus, quote
+import os
+import urllib.request
+import sys
+import time, threading
+import pygame
 
 '''
-分析网页
+遍历的字典
 '''
+print(os.path.abspath('.'))
+
+dict_zi = {}
+set_zi = []
+
+
+def dict2list(dic:dict):
+    '''
+    将字典转化为列表
+    :param dic:
+    :return:
+    '''
+    keys = dic.keys()
+    vals = dic.values()
+    lst = [(key, val) for key, val in zip(keys, vals)]
+    return lst
+
+
+# with open(os.path.abspath('.') + '\\4s5j_v2.txt', 'r', encoding='utf-8') as f:
+with open(os.path.abspath('.') + '\\3500zi.txt', 'r') as f:
+    # print(f.read())
+    for x in f.read():
+        # print(x)
+        # print(ord(x))
+        x_ord = ord(x)
+        if x_ord and (x_ord not in dict_zi):
+            if 19968 < x_ord <= 41863:
+                dict_zi[x_ord] = x
+
+    # print(sorted(dict2list(dict_zi), key=lambda x:x[0], reverse=False))
+    for char in sorted(dict2list(dict_zi), key=lambda x:x[0], reverse=False):
+        set_zi.append(char[1])
+
+print(set_zi)
+print(len(set_zi))
+
+
+def analysishtml(html):
+    '''
+    分析网页
+    '''
+    soup = BeautifulSoup(html, 'lxml')
+
+    # print(soup)
+
+    row_data = {}
+
+    print('============== all html ==============')
+    # 姓名
+    younam = soup.find_all(id='youname')[0]['value']
+    print(younam)
+    row_data['姓名'] = younam
+    print('============== youname ==============')
+
+    # 五格数理评分、配合八字评分
+    tag_data = soup.find_all("div", attrs={'class': 'data'})
+    print(tag_data[0].ul.find_all("li")[0].span.text)
+    print(tag_data[0].ul.find_all("li")[1].span.text)
+
+    row_data['五格数理评分'] = int(tag_data[0].ul.find_all("li")[0].span.text)
+    row_data['八字评分'] = int(tag_data[0].ul.find_all("li")[1].span.text)
+    print('============== 五格数理评分、配合八字评分 ==============')
+
+    '''
+    组织单行数据，以,号分割：
+    名字,五格数理评分,八字评分,天格,人格,地格,外格,总格,三才配置,基础运,成功运,人际关系
+    '''
+
+    # <div class="ge_detail"><em ><span class="ji">吉</span>三才配置</em>
+    #         <p><strong class="red">金 土 土</strong>可获得意外成功发展，有名利双收的运气，基础稳固，平静安康，免于种种灾祸，可得幸福长寿。</p>
+    #       </div>
+    tagb = soup.find_all("div", attrs={'class': 'ge_detail'})
+    # print(tagb)
+
+    for child_cont in tagb:
+        text = str(child_cont.em.text)
+        print(text)
+        if (text.startswith('天格')):
+            print(child_cont.em.span.text)
+            row_data['天格'] = child_cont.em.span.text
+        if (text.startswith('人格')):
+            print(child_cont.em.span.text)
+            row_data['人格'] = child_cont.em.span.text
+        if (text.startswith('地格')):
+            print(child_cont.em.span.text)
+            row_data['地格'] = child_cont.em.span.text
+        if (text.startswith('外格')):
+            print(child_cont.em.span.text)
+            row_data['外格'] = child_cont.em.span.text
+        if (text.startswith('总格')):
+            print(child_cont.em.span.text)
+            row_data['总格'] = child_cont.em.span.text
+        if (text.endswith('三才配置')):
+            print(child_cont.em.span.text)
+            row_data['三才配置'] = child_cont.em.span.text
+        if (text.endswith('基础运的影响')):
+            print(child_cont.em.span.text)
+            row_data['基础运'] = child_cont.em.span.text
+        if (text.endswith('成功运的影响')):
+            print(child_cont.em.span.text)
+            row_data['成功运'] = child_cont.em.span.text
+        if (text.endswith('人际关系的影响')):
+            print(child_cont.em.span.text)
+            row_data['人际关系'] = child_cont.em.span.text
+            print('============================================')
+
+    print(row_data)
+    return row_data
+
+
+def gethtml(url):
+    '''
+    获取远程html
+    '''
+    req = urllib.request.Request(url)
+    response = urllib.request.urlopen(req)
+    the_page = response.read()
+
+    local_code = sys.getfilesystemencoding()
+    print(local_code)
+
+    # print(the_page)
+    # print(the_page.decode('gbk'))
+    return the_page.decode('gbk')
+
+
+'''
+目标url确定
+陈_思伽_公历 2018年1月8日1时_男 urlencode
+%B3%C2_%CB%BC%D9%A4_%B9%AB%C0%FA%202018%C4%EA1%D4%C28%C8%D51%CA%B1_%C4%D0
+'''
+i = 0
+
+# start time
+start_time = time.gmtime(time.time())
+
+
+def wirte_csv(all_data, word):
+    with open(os.path.abspath('.') + '\\result_' + word + '.csv', 'w+', encoding='gbk') as f:
+        f.write('名字,五格数理评分,八字评分,天格,人格,地格,外格,总格,三才配置,基础运,成功运,人际关系\n')
+        for row in all_data:
+            print(row)
+            f.write(row['姓名'])
+            f.write(',' + str(row['五格数理评分']))
+            f.write(',' + str(row['八字评分']))
+            f.write(',' + row['天格'])
+            f.write(',' + row['人格'])
+            f.write(',' + row['地格'])
+            f.write(',' + row['外格'])
+            f.write(',' + row['总格'])
+            f.write(',' + row['三才配置'])
+            f.write(',' + row['基础运'])
+            f.write(',' + row['成功运'])
+            f.write(',' + row['成功运'] + '\n')
+
+
+
+
+for in_word in set_zi:
+    i += 1
+    all_data = []
+    # # TODO 测试期间，只算前n条
+    if i % 100 == 0:
+        print('=========== ' + str(i))
+
+    write_flg = False
+    for out_word in set_zi:
+        # 条件
+        str_from = '陈_' + out_word + in_word + '_公历 2018年1月8日1时_男'
+        print(str_from)
+        str_encode = quote(str_from.encode('gbk'))
+        # print(str_encode)
+        '''
+        http://m.hmz.com/xmcs/%B3%C2_%CB%BC%D9%A4_%B9%AB%C0%FA%202018%C4%EA1%D4%C28%C8%D51%CA%B1_%C4%D0/?from=singlemessage&isappinstalled=0
+        http://m.hmz.com/xmcs/陈_思伽_公历 2018年1月8日1时_男/?from=singlemessage&isappinstalled=0
+        '''
+        url_to = 'http://m.hmz.com/xmcs/' + str_encode + '/?from=singlemessage&isappinstalled=0'
+        print(url_to)
+        try:
+            html = gethtml(url_to)
+
+            row_data = analysishtml(html)
+            all_data.append(row_data)
+
+            if not write_flg:
+                if row_data['三才配置'] == '吉':
+                    write_flg = True
+        except Exception as e:
+            print(e)
+            continue
+
+    # 如果三才有吉，该文件输出
+    if write_flg:
+        wirte_csv(all_data=all_data, word=in_word)
+        file = os.path.abspath('.') + '\\faded.mp3'
+
+        pygame.mixer.init()
+
+        track = pygame.mixer.music.load(file)
+        pygame.mixer.music.play()
+
+        time.sleep(10)
+        pygame.mixer.music.stop()
+
+
+end_time =  time.gmtime(time.time())
+
+print('============ start time' + str(start_time))
+print('============ end time' + str(end_time))
+
+
+
+
 
 html =r'''
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -233,72 +452,3 @@ $(function () {
 </body>
 </html>
 '''
-
-soup = BeautifulSoup(html, 'lxml')
-
-print(soup)
-
-row_data = {}
-
-print('============== all html ==============')
-# 姓名
-younam = soup.find_all(id='youname')[0]['value']
-print(younam)
-row_data['姓名'] = younam
-print('============== youname ==============')
-
-# 五格数理评分、配合八字评分
-tag_data = soup.find_all("div", attrs={'class': 'data'})
-print(tag_data[0].ul.find_all("li")[0].span.text)
-print(tag_data[0].ul.find_all("li")[1].span.text)
-
-row_data['五格数理评分'] = int(tag_data[0].ul.find_all("li")[0].span.text)
-row_data['八字评分'] = int(tag_data[0].ul.find_all("li")[1].span.text)
-print('============== 五格数理评分、配合八字评分 ==============')
-
-'''
-组织单行数据，以,号分割：
-名字,五格数理评分,八字评分,天格,人格,地格,外格,总格,三才配置,基础运,成功运,人际关系
-'''
-
-# <div class="ge_detail"><em ><span class="ji">吉</span>三才配置</em>
-#         <p><strong class="red">金 土 土</strong>可获得意外成功发展，有名利双收的运气，基础稳固，平静安康，免于种种灾祸，可得幸福长寿。</p>
-#       </div>
-tagb = soup.find_all("div", attrs={'class': 'ge_detail'})
-# print(tagb)
-
-for child_cont in tagb:
-    text = str(child_cont.em.text)
-    print(text)
-    if (text.startswith('天格')):
-        print(child_cont.em.span.text)
-        row_data['天格'] = child_cont.em.span.text
-    if (text.startswith('人格')):
-        print(child_cont.em.span.text)
-        row_data['人格'] = child_cont.em.span.text
-    if (text.startswith('地格')):
-        print(child_cont.em.span.text)
-        row_data['地格'] = child_cont.em.span.text
-    if (text.startswith('外格')):
-        print(child_cont.em.span.text)
-        row_data['外格'] = child_cont.em.span.text
-    if (text.startswith('总格')):
-        print(child_cont.em.span.text)
-        row_data['总格'] = child_cont.em.span.text
-    if (text.endswith('三才配置')):
-        print(child_cont.em.span.text)
-        row_data['三才配置'] = child_cont.em.span.text
-    if (text.endswith('基础运的影响')):
-        print(child_cont.em.span.text)
-        row_data['基础运'] = child_cont.em.span.text
-    if (text.endswith('成功运的影响')):
-        print(child_cont.em.span.text)
-        row_data['成功运'] = child_cont.em.span.text
-    if (text.endswith('人际关系的影响')):
-        print(child_cont.em.span.text)
-        row_data['人际关系'] = child_cont.em.span.text
-        print('============================================')
-
-print(row_data)
-
-
