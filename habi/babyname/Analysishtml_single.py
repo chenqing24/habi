@@ -1,4 +1,6 @@
 # coding=gbk
+from urllib.parse import quote
+
 from bs4 import BeautifulSoup
 import os
 import urllib.request
@@ -28,14 +30,14 @@ def dict2list(dic:dict):
 
 
 # with open(os.path.abspath('.') + '\\4s5j_v2.txt', 'r', encoding='utf-8') as f:
-with open(os.path.abspath('.') + '\\3500zi.txt', 'r') as f:
+with open(os.path.abspath('.') + '//3500zi.txt', 'r', encoding='gbk') as f:
     # print(f.read())
     for x in f.read():
         # print(x)
         # print(ord(x))
         x_ord = ord(x)
         if x_ord and (x_ord not in dict_zi):
-            if 19968 < x_ord <= 41863:
+            if 19968 <= x_ord <= 41863:
                 dict_zi[x_ord] = x
 
     # print(sorted(dict2list(dict_zi), key=lambda x:x[0], reverse=False))
@@ -62,6 +64,20 @@ def analysishtml(html):
     print(younam)
     row_data['姓名'] = younam
     print('============== youname ==============')
+
+    # 名字五行
+    name_five = soup.find_all("div", attrs={'class': 'name'})
+    print(name_five[0].ul.find_all("i"))
+    name_no = 0
+    for five in name_five[0].ul.find_all("i"):
+        name_no += 1
+        print(five.text)
+        row_data['字五行' + str(name_no)] = five.text
+
+    if row_data['字五行3'] is None:
+        row_data['字五行3'] = ''
+
+    print('============== 名字五行 ==============')
 
     # 五格数理评分、配合八字评分
     tag_data = soup.find_all("div", attrs={'class': 'data'})
@@ -128,8 +144,8 @@ def gethtml(url):
     the_page = response.read()
 
     local_code = sys.getfilesystemencoding()
-    print(local_code)
-
+    # print(local_code)
+    # time.sleep(1)
     # print(the_page)
     # print(the_page.decode('gbk'))
     return the_page.decode('gbk')
@@ -140,7 +156,6 @@ def gethtml(url):
 陈_思伽_公历 2018年1月8日1时_男 urlencode
 %B3%C2_%CB%BC%D9%A4_%B9%AB%C0%FA%202018%C4%EA1%D4%C28%C8%D51%CA%B1_%C4%D0
 '''
-i = 0
 
 # start time
 start_time = time.gmtime(time.time())
@@ -148,10 +163,13 @@ start_time = time.gmtime(time.time())
 
 def wirte_csv(all_data, word):
     with open(os.path.abspath('.') + '\\result_' + word + '.csv', 'w+', encoding='gbk') as f:
-        f.write('名字,五格数理评分,八字评分,天格,人格,地格,外格,总格,三才配置,基础运,成功运,人际关系\n')
+        f.write('名字,字五行1,字五行2,字五行3,五格数理评分,八字评分,天格,人格,地格,外格,总格,三才配置,基础运,成功运,人际关系\n')
         for row in all_data:
             print(row)
             f.write(row['姓名'])
+            f.write(',' + row['字五行1'])
+            f.write(',' + row['字五行2'])
+            f.write(',' + row['字五行3'])
             f.write(',' + str(row['五格数理评分']))
             f.write(',' + str(row['八字评分']))
             f.write(',' + row['天格'])
@@ -165,19 +183,22 @@ def wirte_csv(all_data, word):
             f.write(',' + row['成功运'] + '\n')
 
 
-
-
-for in_word in set_zi:
-    i += 1
+for in_word in ['伽']:
     all_data = []
-    # # TODO 测试期间，只算前n条
-    if i % 100 == 0:
-        print('=========== ' + str(i))
 
-    write_flg = False
+    i = 0
+
+    write_flg = True
     for out_word in set_zi:
+
+        i += 1
+        if i % 10 == 0:
+            print ('=========== ' + str (i))
+            # TODO 测试期间，只算前n条
+            # break
+
         # 条件
-        str_from = '陈_' + out_word + in_word + '_公历 2018年1月8日1时_男'
+        str_from = '陈_' + in_word + out_word + '_公历 2017年12月17日21时_男'
         print(str_from)
         str_encode = quote(str_from.encode('gbk'))
         # print(str_encode)
@@ -193,9 +214,9 @@ for in_word in set_zi:
             row_data = analysishtml(html)
             all_data.append(row_data)
 
-            if not write_flg:
-                if row_data['三才配置'] == '吉':
-                    write_flg = True
+            # if not write_flg:
+            #     if row_data['三才配置'] == '吉':
+            #         write_flg = True
         except Exception as e:
             print(e)
             continue
@@ -203,7 +224,7 @@ for in_word in set_zi:
     # 如果三才有吉，该文件输出
     if write_flg:
         wirte_csv(all_data=all_data, word=in_word)
-        file = os.path.abspath('.') + '\\faded.mp3'
+        file = os.path.abspath('.') + '//faded.mp3'
 
         pygame.mixer.init()
 
@@ -214,7 +235,7 @@ for in_word in set_zi:
         pygame.mixer.music.stop()
 
 
-end_time =  time.gmtime(time.time())
+end_time = time.gmtime(time.time())
 
 print('============ start time' + str(start_time))
 print('============ end time' + str(end_time))
